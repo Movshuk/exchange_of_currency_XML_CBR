@@ -20,8 +20,24 @@ namespace CurRateCBR_Console
       {
          try
          {
-            Console.WriteLine("Введите требуемую дату для отображения КУРСА ЦБ РФ [ДД.ММ.ГГГГ]");
-            DateTime date = DateTime.ParseExact(Console.ReadLine(), "dd.MM.yyyy", CultureInfo.InvariantCulture);
+            Console.WriteLine("Введите требуемую дату для отображения соотношения стоимости RUB к иностранным валютам ЦБ РФ [ДД.ММ.ГГГГ]");
+            //DateTime date = DateTime.ParseExact(Console.ReadLine(), "dd.MM.yyyy", CultureInfo.InvariantCulture);
+
+            DateTime date;
+            if (DateTime.TryParseExact(Console.ReadLine(), "dd.MM.yyyy", DateTimeFormatInfo.InvariantInfo, DateTimeStyles.None, out date))
+            {
+               if (date > DateTime.Now)
+               {
+                  throw new Exception("Введенная дата больше текущей даты! Курсы не предоставляются на дату больше текущей!");
+               }
+
+            }
+            else
+            {
+               throw new Exception("Неверно введена дата!");
+            }
+
+
 
             //Console.WriteLine(date.Month + "<<< ");
 
@@ -49,40 +65,61 @@ namespace CurRateCBR_Console
             // парс ответа
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(line);
+
+            List<TypeCur> listRates = new List<TypeCur>();
+
+            // чтение блока корневого элемента xml
+            // XmlElement xmlRoot = doc.DocumentElement; // корень или короче:
+            // string text = doc.DocumentElement.GetAttributeNode("Date").Value.ToString();
+            // Console.WriteLine(text + "даты в корне");
+
             foreach (XmlNode item in doc.DocumentElement)
             {
+               /*
                if (item.Attributes.Count > 0)
                {
-                  XmlNode attr = item.Attributes.GetNamedItem("Date");
+                  XmlNode attr = item.Attributes.GetNamedItem("ID");
                   if (attr != null)
                      Console.WriteLine(">>>" + attr.Value);
                }
-
+               */
+               TypeCur typeCur = new TypeCur();
+               typeCur.Date = date;
                foreach (XmlNode childnode in item.ChildNodes)
                {
-                  // если узел - company
                   if (childnode.Name == "CharCode")
                   {
-                     Console.WriteLine("КОД: {0}", childnode.InnerText);
+                     //Console.WriteLine("КОД: {0}", childnode.InnerText);
+                     typeCur.CurAbr = childnode.InnerText;
                   }
-                  // если узел age
+
                   if (childnode.Name == "Nominal")
                   {
-                     Console.WriteLine("НОМИНАЛ: {0}", childnode.InnerText);
+                     //Console.WriteLine("НОМИНАЛ: {0}", childnode.InnerText);
+                     typeCur.HowMany = Convert.ToInt32(childnode.InnerText);
                   }
 
                   if (childnode.Name == "Name")
                   {
-                     Console.WriteLine("ИМЯ ФАЛЮТЫ: {0}", childnode.InnerText);
+                     //Console.WriteLine("ИМЯ ФАЛЮТЫ: {0}", childnode.InnerText);
+                     typeCur.CurName = childnode.InnerText;
                   }
 
                   if (childnode.Name == "Value")
                   {
-                     Console.WriteLine("КУРС: {0}", childnode.InnerText);
+                     //Console.WriteLine("КУРС: {0}", childnode.InnerText);
+                     typeCur.CurRate = Convert.ToDecimal(childnode.InnerText);
                   }
                }
-
+               listRates.Add(typeCur);
             }
+
+
+            foreach (TypeCur tc in listRates)
+            {
+               Console.WriteLine(tc.Date.ToShortDateString() + "\t" + tc.CurAbr + "\t" +tc.HowMany  + "\t" + tc.CurName + "\t" + tc.CurRate);
+            }
+
 
                Console.WriteLine("Press Enter....");
                Console.ReadKey();
@@ -90,6 +127,11 @@ namespace CurRateCBR_Console
             catch (WebException ex)
             {
                if (ex.Response == null) Console.WriteLine("Не возможно установить соединение!");
+               Console.ReadKey();
+            }
+            catch (Exception ex)
+            {
+               Console.WriteLine("Ошибка!" + ex.Message);
             }
             finally
             {

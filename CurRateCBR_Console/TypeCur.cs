@@ -8,10 +8,10 @@ namespace CurRateCBR_Console
 {
    class TypeCur
    {
-      internal string Date { get; set; }
+      internal DateTime Date { get; set; }
       internal string CurAbr { get; set; }
       internal int HowMany { get; set; }
       internal string CurName { get; set; }
-      internal double CurRate { get; set; }
+      internal decimal CurRate { get; set; }
    }
 }
